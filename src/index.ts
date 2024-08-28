@@ -57,7 +57,7 @@ app.get("/", (c) => {
 app.post("/", async (c) => {
   const req = await c.req.json<ActionPostRequest>();
   //Review and refine transaction logic here
-  const transaction = await prepareTransaction(new PublicKey(req.account));
+  const transaction = await validateTransaction(new PublicKey(req.account));
 
   const response: ActionPostResponse = {
     transaction: Buffer.from(transaction.serialize()).toString("base64"),
@@ -66,22 +66,9 @@ app.post("/", async (c) => {
   return c.json(response);
 });
 
-async function prepareTransaction(payer: PublicKey) {
-  const transferIx = SystemProgram.transfer({
-    fromPubkey: payer,
-    toPubkey: new PublicKey("FnUaaRXXAdV1Y4RHD2k9BUwRXBtHuyTWrMK6HHtqKaEq"),
-    lamports: 10000000, // 0.1 sol
-  });
-
-  const blockhash = await connection
-    .getLatestBlockhash({ commitment: "max" })
-    .then((res) => res.blockhash);
-  const messageV0 = new TransactionMessage({
-    payerKey: payer,
-    recentBlockhash: blockhash,
-    instructions: [transferIx],
-  }).compileToV0Message();
-  return new VersionedTransaction(messageV0);
-}
+async function validateTransaction(payer: PublicKey) {
+ //To be built to handle the transaction validation logic on the squad wallet
+  // connect with wallet, then approve or deny the transaction
+  return 0;}
 
 export default app;
