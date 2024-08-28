@@ -34,10 +34,21 @@ app.use(
 
 app.get("/", (c) => {
   const response: ActionGetResponse = {
-    title: "Send me some SOL",
-    description: "This is a simple action that allows to tip a creator",
+    title: "Sign the following Transaction",
+    description: "This will contain transaction details for the user to review before signing",
     icon: "https://img.fotofolio.xyz/?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsolana-labs%2Ftoken-list%2Fmain%2Fassets%2Fmainnet%2FSo11111111111111111111111111111111111111112%2Flogo.png",
-    label: "Tip 0.1 SOL",
+    links: {
+      actions: [
+        {
+          "label": "Approve",
+          "href": "/api/approve",
+        },
+        {
+          "label": "Reject",
+          "href": "/api/reject",
+        },
+      ]
+    }
   };
 
   return c.json(response);
@@ -45,7 +56,7 @@ app.get("/", (c) => {
 
 app.post("/", async (c) => {
   const req = await c.req.json<ActionPostRequest>();
-
+  //Review and refine transaction logic here
   const transaction = await prepareTransaction(new PublicKey(req.account));
 
   const response: ActionPostResponse = {

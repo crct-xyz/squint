@@ -1,12 +1,9 @@
-[![Deploy with Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zhelezkov/solana-action-templates/tree/main/cloudflare-workers-template)
-
 ## Setup
 
-To create a new project using this template, run:
-
-```sh
-npm create cloudflare@latest -- --template https://github.com/zhelezkov/solana-action-templates/cloudflare-workers-template
-```
+To use this project the following is required:
+ - TypeScript
+ - npm
+ - cloudflare workers
 
 ## Dev
 
@@ -20,10 +17,14 @@ And then open Dialect interstitial website: https://dial.to/?action=solana-actio
 
 ## Deploy
 
-You can use cloudflare workers to deploy, it's free and has a generous free tier:
+Deploy to Cloudflare Workers
 
 ```sh
 npm run deploy
 ```
 
 Read more: https://developers.cloudflare.com/workers/
+
+#### Credit for starting template
+
+https://github.com/zhelezkov/solana-action-templates/tree/main/cloudflare-workers-template
