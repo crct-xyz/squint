@@ -7,7 +7,6 @@ node_compat = true
 # Default environment variables
 [vars]
 SOLANA_RPC = "https://api.mainnet-beta.solana.com"
-ANOTHER_VARIABLE = "value"
 
 # Development-specific environment variables
 [env.dev]

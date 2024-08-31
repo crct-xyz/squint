@@ -12,7 +12,6 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import * as multisig from "@sqds/multisig";
-import * as anchor from "@coral-xyz/anchor";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
@@ -26,33 +25,34 @@ app.use(
   }),
 );
 
-async function validateQueryParams(requestUrl) {
+// Helper function to validate query parameters
+async function validateQueryParams(requestUrl: URL) {
   const connection = new Connection(clusterApiUrl("mainnet-beta"));
   let squad = new PublicKey("Gr5FaqkMmypxUJfADQsoYN3moknprc5LzMF2qh3SiP8m");
   let action = requestUrl.searchParams.get("action");
   let transactionIndex = 1;
 
-  try {
-    if (requestUrl.searchParams.get("squad")) {
-      squad = new PublicKey(requestUrl.searchParams.get("squad"));
+  if (requestUrl.searchParams.get("squad")) {
+    try {
+      squad = new PublicKey(requestUrl.searchParams.get("squad") as string);
+    } catch (err) {
+      throw new Error("Invalid squad public key");
     }
-  } catch (err) {
-    throw err;
   }
 
   const multisigInfo = await multisig.accounts.Multisig.fromAccountAddress(
     connection,
-    squad,
+    squad
   );
 
   transactionIndex = Number(multisigInfo.transactionIndex);
 
-  try {
-    if (requestUrl.searchParams.get("tx")) {
+  if (requestUrl.searchParams.get("tx")) {
+    try {
       transactionIndex = Number(requestUrl.searchParams.get("tx"));
+    } catch (err) {
+      throw new Error("Invalid transaction index");
     }
-  } catch (err) {
-    throw err;
   }
 
   return {
@@ -62,6 +62,7 @@ async function validateQueryParams(requestUrl) {
   };
 }
 
+// GET Request Handler
 app.get("/", async (c) => {
   try {
     const requestUrl = new URL(c.req.url);
@@ -69,7 +70,7 @@ app.get("/", async (c) => {
 
     const baseHref = new URL(
       `/api/action/approve?squad=${squad}&tx=${transactionIndex}`,
-      requestUrl.origin,
+      requestUrl.origin
     ).toString();
 
     const vault = multisig.getVaultPda({
@@ -78,12 +79,12 @@ app.get("/", async (c) => {
     });
 
     const multisigInfo = await fetch(
-      `https://v4-api.squads.so/multisig/${vault[0].toString()}`,
+      `https://v4-api.squads.so/multisig/${vault[0].toString()}`
     ).then((res) => res.json());
 
     const meta = multisigInfo.metadata;
 
-    const payload = {
+    const payload: ActionGetResponse = {
       title: `Approve ${meta.name} Transaction`,
       icon: "https://ucarecdn.com/7aa46c85-08a4-4bc7-9376-88ec48bb1f43/-/preview/880x864/-/quality/smart/-/format/auto/",
       description: `Cast your vote on transaction #${transactionIndex} for ${meta.name}`,
@@ -102,20 +103,21 @@ app.get("/", async (c) => {
 
     return c.json(payload, 200, ACTIONS_CORS_HEADERS);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return c.json({ error: "An error occurred" }, 500, ACTIONS_CORS_HEADERS);
   }
 });
 
+// POST Request Handler
 app.post("/", async (c) => {
   try {
     const requestUrl = new URL(c.req.url);
-    let { squad, transactionIndex, action } =
+    const { squad, transactionIndex, action } =
       await validateQueryParams(requestUrl);
 
-    const body = await c.req.json();
+    const body: ActionPostRequest = await c.req.json();
 
-    let account;
+    let account: PublicKey;
     try {
       account = new PublicKey(body.account);
     } catch (err) {
@@ -129,7 +131,7 @@ app.post("/", async (c) => {
     });
 
     const multisigInfo = await fetch(
-      `https://v4-api.squads.so/multisig/${vault[0].toString()}`,
+      `https://v4-api.squads.so/multisig/${vault[0].toString()}`
     ).then((res) => res.json());
 
     const meta = multisigInfo.metadata;
@@ -144,7 +146,7 @@ app.post("/", async (c) => {
           transactionIndex: BigInt(transactionIndex),
           member: account,
           programId: multisig.PROGRAM_ID,
-        }),
+        })
       );
     } else if (action === "Reject") {
       transaction.add(
@@ -153,7 +155,7 @@ app.post("/", async (c) => {
           transactionIndex: BigInt(transactionIndex),
           member: account,
           programId: multisig.PROGRAM_ID,
-        }),
+        })
       );
     } else if (action === "ApproveExecute") {
       transaction.add(
@@ -171,7 +173,7 @@ app.post("/", async (c) => {
             member: account,
             programId: multisig.PROGRAM_ID,
           })
-        ).instruction,
+        ).instruction
       );
     } else if (action === "Simulate") {
       const [transaction] = await PublicKey.findProgramAddressSync(
@@ -181,13 +183,13 @@ app.post("/", async (c) => {
           Buffer.from("transaction"),
           new anchor.BN(transactionIndex).toArrayLike(Buffer, "le", 8),
         ],
-        multisig.PROGRAM_ID,
+        multisig.PROGRAM_ID
       );
 
       const transactionInfo =
         await multisig.accounts.VaultTransaction.fromAccountAddress(
           connection,
-          transaction,
+          transaction
         );
       const message = transactionInfo.serialize();
 
@@ -196,7 +198,7 @@ app.post("/", async (c) => {
       return c.text(
         "No supported action was selected",
         400,
-        ACTIONS_CORS_HEADERS,
+        ACTIONS_CORS_HEADERS
       );
     }
 
@@ -204,23 +206,24 @@ app.post("/", async (c) => {
       await connection.getLatestBlockhash()
     ).blockhash;
 
-    const payload = await createPostResponse({
+    const payload: ActionPostResponse = await createPostResponse({
       fields: {
         transaction,
         message: `${action === "Approve"
-            ? "Approved"
-            : action === "Reject"
-              ? "Rejected"
-              : "Approved and executed"
+          ? "Approved"
+          : action === "Reject"
+            ? "Rejected"
+            : "Approved and executed"
           } transaction #${transactionIndex} for ${meta.name}`,
       },
     });
 
     return c.json(payload, 200, ACTIONS_CORS_HEADERS);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return c.json({ error: "An error occurred" }, 500, ACTIONS_CORS_HEADERS);
   }
 });
 
 export default app;
+
